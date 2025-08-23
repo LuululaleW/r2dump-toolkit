@@ -1,6 +1,9 @@
 # r2dump-toolkit
 A toolkit to analyze and diff C++ symbols from .so files.
 
+# r2dump-toolkit
+A toolkit to analyze and diff C++ symbols from .so files.
+
 Cara pakainya sekarang jauh lebih mudah karena sudah menjadi toolkit yang bisa diinstal. Berikut adalah panduan lengkapnya, khusus untuk penggunaan di Termux.
 
 Langkah 1: Instalasi Toolkit
