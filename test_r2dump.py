@@ -4,10 +4,9 @@ from unittest.mock import patch, MagicMock, mock_open
 from r2dump import generate_symbols_json
 
 # ==============================================================================
-# DATA PALSU UNTU PENGUJIAN
+# DATA PALSU UNTUK PENGUJIAN
 # ==============================================================================
 
-# Ini adalah contoh output yang akan kita pura-pura didapatkan dari `readelf | c++filt`
 FAKE_SYMBOLS_OUTPUT = """
    1: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT  ABS
    2: 0000000000012340    56 FUNC    GLOBAL DEFAULT   13 MyNamespace::MyClass::doSomething(int, bool)
@@ -16,7 +15,6 @@ FAKE_SYMBOLS_OUTPUT = """
    5: 0000000000000000     0 NOTYPE  WEAK   DEFAULT  UND std::logic_error::logic_error(char const*)
 """
 
-# Ini adalah hasil JSON yang kita harapkan dari parsing data di atas
 EXPECTED_RESULT = {
     'library_name': 'libfake.so',
     'classes_found': 2,
@@ -38,40 +36,49 @@ EXPECTED_RESULT = {
     ]
 }
 
-
 # ==============================================================================
 # FUNGSI TES
 # ==============================================================================
 
-# Menggunakan @patch untuk "mencegat" panggilan ke subprocess.Popen
+# Patch Popen dan tempfile secara bersamaan
+@patch('r2dump.tempfile.NamedTemporaryFile')
 @patch('r2dump.subprocess.Popen')
-def test_generate_symbols_json_parsing(mock_popen):
+def test_generate_symbols_json_parsing(mock_popen, mock_tempfile):
     """
     Tes ini memverifikasi bahwa fungsi generate_symbols_json dapat mem-parsing
     output simbol palsu dengan benar dan menghasilkan struktur data yang diharapkan.
     """
-    # 1. SETUP MOCK: Atur agar Popen mengembalikan data palsu kita
-    # Kita membuat DUA mock, satu untuk setiap panggilan Popen (readelf dan c++filt)
+    # 1. SETUP MOCK
+    
+    # Atur mock untuk Popen
     mock_readelf_process = MagicMock()
     mock_cxxfilt_process = MagicMock()
-    
-    # Mengatur side_effect agar panggilan pertama ke Popen mengembalikan mock_readelf_process,
-    # dan panggilan kedua mengembalikan mock_cxxfilt_process.
     mock_popen.side_effect = [mock_readelf_process, mock_cxxfilt_process]
-    
-    # Menambahkan mock untuk 'tempfile.NamedTemporaryFile'
-    # agar kita tidak benar-benar membuat file di sistem
-    with patch('r2dump.tempfile.NamedTemporaryFile', mock_open(read_data=FAKE_SYMBOLS_OUTPUT)):
-    
-        # 2. EKSEKUSI: Panggil fungsi yang ingin kita uji
-        result = generate_symbols_json('libfake.so')
 
-        # 3. VERIFIKASI (ASSERT): Periksa apakah hasilnya sesuai harapan
-        assert result is not None, "Fungsi seharusnya mengembalikan dictionary, bukan None"
-        assert result['classes_found'] == EXPECTED_RESULT['classes_found']
-        assert result['methods_found'] == EXPECTED_RESULT['methods_found']
-        
-        # Membandingkan set untuk mengabaikan urutan
-        result_classes = {cls['class_name'] for cls in result['classes']}
-        expected_classes = {cls['class_name'] for cls in EXPECTED_RESULT['classes']}
-        assert result_classes == expected_classes
+    # Atur mock untuk tempfile.NamedTemporaryFile
+    # Ini akan membuat objek file palsu di memori
+    mock_file_handle = mock_open(read_data=FAKE_SYMBOLS_OUTPUT).return_value
+    # Saat __enter__ dipanggil (saat blok 'with' dimulai), kembalikan handle file palsu
+    mock_tempfile.return_value.__enter__.return_value = mock_file_handle
+    
+    # 2. EKSEKUSI
+    result = generate_symbols_json('libfake.so')
+
+    # 3. VERIFIKASI
+    assert result is not None, "Fungsi seharusnya mengembalikan dictionary, bukan None"
+    
+    # Normalisasi hasil untuk perbandingan yang andal (mengabaikan urutan)
+    def normalize_data(data):
+        # Mengurutkan kelas berdasarkan nama
+        sorted_classes = sorted(data['classes'], key=lambda x: x['class_name'])
+        # Mengurutkan metode di dalam setiap kelas
+        for cls in sorted_classes:
+            cls['methods'] = sorted(cls['methods'], key=lambda x: x['name'])
+        data['classes'] = sorted_classes
+        return data
+
+    normalized_result = normalize_data(result)
+    normalized_expected = normalize_data(EXPECTED_RESULT)
+
+    assert normalized_result == normalized_expected
+
