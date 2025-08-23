@@ -1,30 +1,27 @@
 [build-system]
-requires = [&quot;setuptools&gt;=61.0&quot;]
-build-backend = &quot;setuptools.build_meta&quot;
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "r2dump-toolkit"
-version = "1.1.0"
+version = "1.0.0"
 authors = [
-{ name = "LuululaleW", email = "ramabkl650@gmail.com" },
+    { name = "LuululaleW", email = "ramabkl650@gmail.com" },
 ]
 description = "A toolkit to analyze and diff C++ symbols from .so files."
 readme = "README.md"
-requires-python = "\>=3.7"
+requires-python = ">=3.7"
 license = { text = "MIT License" }
 classifiers = [
-"Programming Language :: Python :: 3",
-"License :: OSI Approved :: MIT License",
-"Operating System :: OS Independent",
-"Topic :: Software Development :: Disassemblers",
-"Environment :: Console",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Disassemblers",
+    "Environment :: Console",
 ]
-
-# Menambahkan 'argcomplete' untuk tab completion
-
 dependencies = [
-"colorlog\>=6.7.0",
-"argcomplete\>=3.0.0",
+    "colorlog>=6.7.0",
+    "argcomplete>=3.0.0",
 ]
 
 [project.scripts]
