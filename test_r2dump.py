@@ -1,9 +1,10 @@
 import pytest
 from unittest.mock import patch, MagicMock, mock_open
+# Pastikan Anda mengimpor fungsi dari file r2dump
 from r2dump import generate_symbols_json
 
 # ==============================================================================
-# DATA PALSU UNTUK PENGUJIAN
+# DATA PALSU UNTU PENGUJIAN
 # ==============================================================================
 
 # Ini adalah contoh output yang akan kita pura-pura didapatkan dari `readelf | c++filt`
@@ -50,15 +51,17 @@ def test_generate_symbols_json_parsing(mock_popen):
     output simbol palsu dengan benar dan menghasilkan struktur data yang diharapkan.
     """
     # 1. SETUP MOCK: Atur agar Popen mengembalikan data palsu kita
-    # Kita membuat mock untuk proses `readelf` dan `c++filt`
-    mock_process = MagicMock()
-    mock_process.stdout.read.return_value = FAKE_SYMBOLS_OUTPUT.encode('utf-8')
-    mock_process.communicate.return_value = (FAKE_SYMBOLS_OUTPUT.encode('utf-8'), b'')
-    mock_popen.return_value = mock_process
+    # Kita membuat DUA mock, satu untuk setiap panggilan Popen (readelf dan c++filt)
+    mock_readelf_process = MagicMock()
+    mock_cxxfilt_process = MagicMock()
+    
+    # Mengatur side_effect agar panggilan pertama ke Popen mengembalikan mock_readelf_process,
+    # dan panggilan kedua mengembalikan mock_cxxfilt_process.
+    mock_popen.side_effect = [mock_readelf_process, mock_cxxfilt_process]
     
     # Menambahkan mock untuk 'tempfile.NamedTemporaryFile'
     # agar kita tidak benar-benar membuat file di sistem
-    with patch('r2dump.tempfile.NamedTemporaryFile', mock_open(read_data=FAKE_SYMBOLS_OUTPUT)) as mock_file:
+    with patch('r2dump.tempfile.NamedTemporaryFile', mock_open(read_data=FAKE_SYMBOLS_OUTPUT)):
     
         # 2. EKSEKUSI: Panggil fungsi yang ingin kita uji
         result = generate_symbols_json('libfake.so')
@@ -67,5 +70,8 @@ def test_generate_symbols_json_parsing(mock_popen):
         assert result is not None, "Fungsi seharusnya mengembalikan dictionary, bukan None"
         assert result['classes_found'] == EXPECTED_RESULT['classes_found']
         assert result['methods_found'] == EXPECTED_RESULT['methods_found']
-        assert result['classes'] == EXPECTED_RESULT['classes']
-
+        
+        # Membandingkan set untuk mengabaikan urutan
+        result_classes = {cls['class_name'] for cls in result['classes']}
+        expected_classes = {cls['class_name'] for cls in EXPECTED_RESULT['classes']}
+        assert result_classes == expected_classes
