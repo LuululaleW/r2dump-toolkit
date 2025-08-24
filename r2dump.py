@@ -74,8 +74,8 @@ def generate_symbols_json(library_path):
             demangled_name = demangled_name.split()[-1]
 
         # ==================================================================
-        # === INI ADALAH BARIS YANG SEHARUSNYA SUDAH DIPERBAIKI ===
-        # Pastikan tidak ada garis miring terbalik ganda (\\)
+        # === INI ADALAH BARIS KUNCI YANG DIPERBAIKI ===
+        # Pastikan tidak ada garis miring ganda (\\)
         match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
         # ==================================================================
 
