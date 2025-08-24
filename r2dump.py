@@ -20,7 +20,6 @@ def generate_symbols_json(library_path):
     symbols = []
 
     try:
-        # Perintah readelf disederhanakan untuk kompatibilitas maksimal
         readelf_process = subprocess.Popen(
             ['readelf', '-s', library_path],
             stdout=subprocess.PIPE,
@@ -71,6 +70,9 @@ def generate_symbols_json(library_path):
 
     class_map = defaultdict(list)
     total_methods = 0
+    
+    # Set untuk melacak metode unik dan menghindari duplikat
+    unique_methods = set()
 
     for symbol in symbols:
         demangled_name = symbol['demangled_name']
@@ -78,10 +80,16 @@ def generate_symbols_json(library_path):
         if ' ' in demangled_name:
             demangled_name = demangled_name.split()[-1]
 
-        # Regex yang sudah diperbaiki
         match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
 
         if match:
+            # Membuat signature unik untuk setiap metode
+            method_signature = f"{demangled_name}@{symbol['offset']}"
+            if method_signature in unique_methods:
+                continue # Lewati jika metode ini sudah ditambahkan
+            
+            unique_methods.add(method_signature)
+
             class_name = match.group(1)
             method_name = match.group(2)
             params = match.group(3)
@@ -118,6 +126,8 @@ def main():
     parser_dump = subparsers.add_parser("dump", help="Menganalisis satu file .so dan menyimpan hasilnya.")
     parser_dump.add_argument("file", help="Path ke file .so yang akan dianalisis.")
     parser_dump.add_argument("--format", choices=['txt', 'json'], default='txt', help="Format output (txt atau json).")
+    # --- OPSI BARU DITAMBAHKAN DI SINI ---
+    parser_dump.add_argument("--filter", type=str, help="Hanya tampilkan kelas/metode yang mengandung kata kunci ini.")
 
     parser_diff = subparsers.add_parser("diff", help="Membandingkan dua file .so.")
     parser_diff.add_argument("file1", help="Path ke file .so pertama.")
@@ -128,6 +138,24 @@ def main():
     if args.command == "dump":
         result = generate_symbols_json(args.file)
         if result:
+            # --- LOGIKA FILTER DITERAPKAN DI SINI ---
+            if args.filter:
+                keyword = args.filter.lower()
+                filtered_classes = []
+                for cls in result['classes']:
+                    # Cek apakah nama kelas atau salah satu metodenya cocok dengan filter
+                    if keyword in cls['class_name'].lower():
+                        filtered_classes.append(cls)
+                    else:
+                        matching_methods = [m for m in cls['methods'] if keyword in m['name'].lower()]
+                        if matching_methods:
+                            # Jika hanya metode yang cocok, buat entri kelas baru hanya dengan metode tersebut
+                            filtered_classes.append({
+                                'class_name': cls['class_name'],
+                                'methods': matching_methods
+                            })
+                result['classes'] = filtered_classes
+
             lib_name = os.path.basename(args.file)
             output_dir = f"{lib_name}@dump"
             os.makedirs(output_dir, exist_ok=True)
@@ -137,22 +165,25 @@ def main():
                 with open(output_path, 'w') as f:
                     json.dump(result, f, indent=4)
                 print(f"Hasil JSON disimpan di: {output_path}")
-            else:  # txt format
+            else:
                 output_path = os.path.join(output_dir, "dump.txt")
                 with open(output_path, 'w') as f:
-                    for cls in result['classes']:
-                        if cls['methods']:
-                            f.write(f"// CLASS: {cls['class_name']}\n")
-                        
-                        for method in cls['methods']:
-                            offset = method['offset']
-                            simple_offset = offset.replace('0x', '').upper()
+                    if not result['classes']:
+                        f.write(f"Tidak ada item yang cocok dengan filter '{args.filter}' ditemukan.\n")
+                    else:
+                        for cls in result['classes']:
+                            if cls['methods']:
+                                f.write(f"// CLASS: {cls['class_name']}\n")
                             
-                            f.write(f"\t// RVA: 0x{simple_offset} Offset: 0x{simple_offset} VA: 0x{offset}\n")
-                            f.write(f"\t{method['name']}{method['params']} {{ }}\n\n")
+                            for method in cls['methods']:
+                                offset = method['offset']
+                                simple_offset = offset.replace('0x', '').upper()
+                                f.write(f"\t// RVA: 0x{simple_offset} Offset: 0x{simple_offset} VA: 0x{offset}\n")
+                                f.write(f"\t{method['name']}{method['params']} {{ }}\n\n")
                 print(f"Hasil TXT disimpan di: {output_path}")
     
     elif args.command == "diff":
+        # Fungsi diff tidak diubah
         print("Memproses file pertama...")
         data1 = generate_symbols_json(args.file1)
         print("Memproses file kedua...")
@@ -161,24 +192,13 @@ def main():
         if data1 and data2:
             methods1 = {f"{c['class_name']}::{m['name']}{m['params']}" for c in data1['classes'] for m in c['methods']}
             methods2 = {f"{c['class_name']}::{m['name']}{m['params']}" for c in data2['classes'] for m in c['methods']}
-
             added = sorted(list(methods2 - methods1))
             removed = sorted(list(methods1 - methods2))
-
             print("\n" + "="*20 + " HASIL PERBANDINGAN " + "="*20)
             print(f"\n[+] Ditambahkan di {os.path.basename(args.file2)} ({len(added)}):")
-            if added:
-                for item in added:
-                    print(f"  + {item}")
-            else:
-                print("  Tidak ada.")
-
+            print('\n'.join(f"  + {item}" for item in added) if added else "  Tidak ada.")
             print(f"\n[-] Dihapus di {os.path.basename(args.file2)} ({len(removed)}):")
-            if removed:
-                for item in removed:
-                    print(f"  - {item}")
-            else:
-                print("  Tidak ada.")
+            print('\n'.join(f"  - {item}" for item in removed) if removed else "  Tidak ada.")
             print("\n" + "="*62)
 
 if __name__ == '__main__':
