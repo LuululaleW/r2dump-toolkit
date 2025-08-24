@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "r2dump-toolkit"
-version = "1.2.0"
+version = "1.2.1"
 authors = [
     { name = "LuululaleW", email = "ramabkl650@gmail.com" },
 ]
@@ -24,3 +24,11 @@ dependencies = [
 
 [project.scripts]
 r2dump = "r2dump:main"
+
+# =================================================================
+# BAGIAN BARU UNTUK MEMPERBAIKI ERROR
+# =================================================================
+[tool.setuptools]
+# Memberitahu setuptools untuk hanya menyertakan modul 'r2dump'
+py-modules = ["r2dump"]
+# =================================================================
