@@ -91,9 +91,7 @@ def generate_symbols_json(lib_path: str) -> Optional[Dict]:
     classes: Dict[str, List[Dict]] = defaultdict(list)
     method_count = 0
     
-    # =================================================================
     # REGEX DAN LOGIKA PARSING YANG DIPERBARUI
-    # =================================================================
     pattern = re.compile(
         r"^\s*\d+:\s+"             # Symbol index
         r"([0-9a-fA-F]{8,16})\s+"   # Grup 1: Offset
@@ -120,7 +118,6 @@ def generate_symbols_json(lib_path: str) -> Optional[Dict]:
             "offset": f"0x{int(offset, 16):X}"
         })
         method_count += 1
-    # =================================================================
 
     logging.debug(f"Ditemukan {len(classes)} kelas dan {method_count} metode.")
     return {
@@ -130,7 +127,6 @@ def generate_symbols_json(lib_path: str) -> Optional[Dict]:
         "classes": [{"class_name": k, "methods": sorted(v, key=lambda x: x['name'])} for k, v in sorted(classes.items())]
     }
 
-# (Sisa file tetap sama, tidak perlu diubah)
 # ==============================================================================
 # 4. COMMAND HANDLERS (DUMP & DIFF)
 # ==============================================================================
