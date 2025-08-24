@@ -22,7 +22,7 @@ def generate_symbols_json(library_path):
     # Langkah 1: Jalankan readelf untuk mendapatkan simbol dari library
     try:
         readelf_process = subprocess.Popen(
-            ['readelf', '-s', '--wide', library_path],
+            ['readelf', '-s', '--W', library_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
