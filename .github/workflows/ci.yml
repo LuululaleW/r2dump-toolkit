@@ -22,14 +22,10 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    # =================================================================
-    # LANGKAH BARU YANG DITAMBAHKAN
-    # =================================================================
     - name: Install system dependencies (binutils)
       run: |
         sudo apt-get update
         sudo apt-get install -y binutils
-    # =================================================================
 
     - name: Install Python dependencies
       run: |
