@@ -8,7 +8,7 @@ import tempfile
 import json
 import logging
 import colorlog
-import argcomplete # <-- Impor baru
+import argcomplete
 from collections import defaultdict
 from typing import Dict, List, Optional, Set
 
@@ -17,7 +17,6 @@ from typing import Dict, List, Optional, Set
 # ==============================================================================
 
 def setup_logging(level: int = logging.INFO) -> None:
-    """Mengkonfigurasi logging berwarna untuk output yang bersih dan informatif."""
     handler = colorlog.StreamHandler()
     formatter = colorlog.ColoredFormatter(
         '%(log_color)s[%(levelname)-8s]%(reset)s %(message)s',
@@ -32,7 +31,6 @@ def setup_logging(level: int = logging.INFO) -> None:
     handler.setFormatter(formatter)
     
     logger = colorlog.getLogger()
-    # Mencegah duplikasi handler jika fungsi ini dipanggil lagi
     if not logger.handlers:
         logger.addHandler(handler)
     logger.setLevel(level)
@@ -42,7 +40,6 @@ def setup_logging(level: int = logging.INFO) -> None:
 # ==============================================================================
 
 def check_command(cmd: str) -> bool:
-    """Memeriksa apakah sebuah command tersedia di sistem."""
     try:
         subprocess.run(['command', '-v', cmd], capture_output=True, check=True)
         return True
@@ -50,7 +47,6 @@ def check_command(cmd: str) -> bool:
         return False
 
 def install_dependencies() -> None:
-    """Mendeteksi OS dan menginstal binutils."""
     logging.info("Mencoba menginstal 'binutils'...")
     managers = {
         'pkg': 'pkg update -y && pkg install -y binutils',
@@ -75,7 +71,6 @@ def install_dependencies() -> None:
 # ==============================================================================
 
 def generate_symbols_json(lib_path: str) -> Optional[Dict]:
-    """Mengekstrak, mem-parsing, dan mengembalikan simbol dalam format dictionary Python."""
     if not os.path.isfile(lib_path):
         logging.error(f"File tidak ditemukan: {lib_path}")
         return None
@@ -95,22 +90,37 @@ def generate_symbols_json(lib_path: str) -> Optional[Dict]:
 
     classes: Dict[str, List[Dict]] = defaultdict(list)
     method_count = 0
-    pattern = re.compile(r"^\s*\d+:\s+([0-9a-fA-F]{8,16})\s+.*?\s+((?:[a-zA-Z0-9_]+::)*[a-zA-Z0-9_~]+(?:<[^>]+>)?::[a-zA-Z0-9_~]+\([^)]*\))")
+    
+    # =================================================================
+    # REGEX DAN LOGIKA PARSING YANG DIPERBARUI
+    # =================================================================
+    pattern = re.compile(
+        r"^\s*\d+:\s+"             # Symbol index
+        r"([0-9a-fA-F]{8,16})\s+"   # Grup 1: Offset
+        r"\d+\s+(?:FUNC|OBJECT)"   # Symbol size and type
+        r".*?\s+"                  # Symbol binding, etc.
+        r"(.+?::)"                 # Grup 2: Nama kelas/namespace (non-greedy)
+        r"([^(:)]+)"               # Grup 3: Nama metode
+        r"(\(.*\))"                # Grup 4: Parameter
+    )
 
     for line in lines:
         match = pattern.search(line)
         if not match or match.group(1).lstrip('0') == "":
             continue
         
-        offset, full_name = match.groups()
-        try:
-            class_path, method_with_params = full_name.rsplit("::", 1)
-            method_name = method_with_params.split('(')[0]
-            params = method_with_params[len(method_name):]
-            classes[class_path].append({"name": method_name, "params": params, "offset": f"0x{int(offset, 16):X}"})
-            method_count += 1
-        except ValueError:
-            continue
+        offset, class_path, method_name, params = match.groups()
+        
+        # Membersihkan '::' di akhir nama kelas
+        class_path = class_path.rstrip(':')
+        
+        classes[class_path].append({
+            "name": method_name, 
+            "params": params, 
+            "offset": f"0x{int(offset, 16):X}"
+        })
+        method_count += 1
+    # =================================================================
 
     logging.debug(f"Ditemukan {len(classes)} kelas dan {method_count} metode.")
     return {
@@ -120,12 +130,12 @@ def generate_symbols_json(lib_path: str) -> Optional[Dict]:
         "classes": [{"class_name": k, "methods": sorted(v, key=lambda x: x['name'])} for k, v in sorted(classes.items())]
     }
 
+# (Sisa file tetap sama, tidak perlu diubah)
 # ==============================================================================
 # 4. COMMAND HANDLERS (DUMP & DIFF)
 # ==============================================================================
 
 def perform_dump(args: argparse.Namespace) -> None:
-    """Menangani perintah 'dump'."""
     start_time = time.time()
     data = generate_symbols_json(args.file)
     if not data:
@@ -153,7 +163,6 @@ def perform_dump(args: argparse.Namespace) -> None:
     logging.info(f"Selesai dalam {time.time() - start_time:.2f} detik.")
 
 def perform_diff(args: argparse.Namespace) -> None:
-    """Menangani perintah 'diff'."""
     logging.info(f"Memulai perbandingan antara {os.path.basename(args.file1)} dan {os.path.basename(args.file2)}")
     start_time = time.time()
     
@@ -172,7 +181,6 @@ def perform_diff(args: argparse.Namespace) -> None:
     added = sorted(list(symbols2 - symbols1))
     removed = sorted(list(symbols1 - symbols2))
     
-    # Menggunakan print() untuk laporan akhir agar terpisah dari log
     print("\n\033[33;1m" + "="*50 + "\033[0m")
     print("\033[33;1mHASIL PERBANDINGAN SIMBOL\033[0m")
     print("\033[33;1m" + "="*50 + "\033[0m")
@@ -193,7 +201,6 @@ def perform_diff(args: argparse.Namespace) -> None:
 # ==============================================================================
 
 def main() -> None:
-    """Fungsi utama dan parser argumen."""
     parser = argparse.ArgumentParser(description="Toolkit analisis simbol C++ untuk file .so.")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose (DEBUG) logging.")
     parser.add_argument("-q", "--quiet", action="store_true", help="Suppress INFO messages.")
@@ -209,7 +216,7 @@ def main() -> None:
     parser_diff.add_argument("file2", help="Path ke file .so versi baru").completer = argcomplete.FilesCompleter()
     parser_diff.set_defaults(func=perform_diff)
 
-    argcomplete.autocomplete(parser) # <-- Mengaktifkan tab completion
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     log_level = logging.INFO
