@@ -198,7 +198,7 @@ def perform_diff(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Toolkit analisis simbol C++ untuk file .so.")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose (DEBUG) logging.")
-    parser.add_argument("-q", "--quiet", action="store_true", help="Suppress INFO messages.")
+    parser.add_-argument("-q", "--quiet", action="store_true", help="Suppress INFO messages.")
     subparsers = parser.add_subparsers(dest="command", required=True, help="Perintah yang tersedia")
 
     parser_dump = subparsers.add_parser("dump", help="Mengekstrak simbol dari satu file .so")
