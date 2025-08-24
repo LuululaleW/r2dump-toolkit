@@ -25,8 +25,6 @@ def generate_symbols_json(library_path):
             print(f"Error executing readelf: {stderr}")
             return None
         
-        # Ekstrak hanya simbol yang relevan (mangled C++)
-        # Pola ini mencari simbol yang diawali dengan _Z (standar mangling C++)
         mangled_symbols = re.findall(r'\s+([0-9a-fA-F]+)\s+\d+\s+FUNC\s+GLOBAL\s+DEFAULT\s+\d+\s+(_Z\S+)', stdout)
         
         if not mangled_symbols:
@@ -58,12 +56,10 @@ def generate_symbols_json(library_path):
         print("Error: 'c++filt' command not found. Please ensure binutils is installed.")
         return None
 
-    # Pastikan jumlah simbol mangled dan demangled cocok
     if len(mangled_symbols) != len(demangled_names):
         print("Mismatch between mangled and demangled symbols count.")
         return None
 
-    # Gabungkan offset dengan nama yang sudah di-demangle
     for i, (offset, _) in enumerate(mangled_symbols):
         symbols.append({'offset': f'0x{offset}', 'demangled_name': demangled_names[i]})
 
@@ -74,17 +70,15 @@ def generate_symbols_json(library_path):
     for symbol in symbols:
         demangled_name = symbol['demangled_name']
         
-        # ==================================================================
-        # === INI ADALAH BAGIAN PERBAIKANNYA ===
-        # Membersihkan nama dari prefiks yang tidak diinginkan seperti "GLOBAL DEFAULT 13"
-        # dengan mengambil elemen terakhir setelah di-split.
-        # Contoh: "GLOBAL DEFAULT   13 MyNamespace::MyClass" -> "MyNamespace::MyClass"
         if ' ' in demangled_name:
             demangled_name = demangled_name.split()[-1]
+
+        # ==================================================================
+        # === INI ADALAH BARIS YANG DIPERBAIKI ===
+        # Menghapus garis miring terbalik ganda yang tidak perlu
+        match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
         # ==================================================================
 
-        # Ekstrak nama kelas, nama metode, dan parameter
-        match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
         if match:
             class_name = match.group(1)
             method_name = match.group(2)
@@ -114,9 +108,4 @@ def generate_symbols_json(library_path):
     return output_data
 
 if __name__ == '__main__':
-    # Contoh penggunaan:
-    # Ganti 'libexample.so' dengan path ke library Anda
-    # result = generate_symbols_json('libexample.so') 
-    # if result:
-    #     print(json.dumps(result, indent=4))
     pass
