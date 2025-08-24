@@ -91,12 +91,12 @@ def generate_symbols_json(lib_path: str) -> Optional[Dict]:
     classes: Dict[str, List[Dict]] = defaultdict(list)
     method_count = 0
     
-    # REGEX DAN LOGIKA PARSING YANG DIPERBARUI
+    # REGEX FINAL YANG DIPERBAIKI
     pattern = re.compile(
         r"^\s*\d+:\s+"             # Symbol index
         r"([0-9a-fA-F]{8,16})\s+"   # Grup 1: Offset
         r"\d+\s+(?:FUNC|OBJECT)"   # Symbol size and type
-        r".*?\s+"                  # Symbol binding, etc.
+        r"\s+\w+\s+\w+\s+\d+\s+"    # Binding, Visibility, Ndx
         r"(.+?::)"                 # Grup 2: Nama kelas/namespace (non-greedy)
         r"([^(:)]+)"               # Grup 3: Nama metode
         r"(\(.*\))"                # Grup 4: Parameter
@@ -109,12 +109,11 @@ def generate_symbols_json(lib_path: str) -> Optional[Dict]:
         
         offset, class_path, method_name, params = match.groups()
         
-        # Membersihkan '::' di akhir nama kelas
         class_path = class_path.rstrip(':')
         
         classes[class_path].append({
-            "name": method_name, 
-            "params": params, 
+            "name": method_name.strip(), 
+            "params": params.strip(), 
             "offset": f"0x{int(offset, 16):X}"
         })
         method_count += 1
