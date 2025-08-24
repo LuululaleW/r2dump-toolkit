@@ -73,8 +73,11 @@ def generate_symbols_json(library_path):
         if ' ' in demangled_name:
             demangled_name = demangled_name.split()[-1]
 
-        # Regex yang sudah diperbaiki untuk parsing nama metode dan kelas
+        # ==================================================================
+        # === INI ADALAH BARIS KUNCI YANG DIPERBAIKI ===
+        # Pastikan tidak ada garis miring ganda (\\)
         match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
+        # ==================================================================
 
         if match:
             class_name = match.group(1)
@@ -105,5 +108,4 @@ def generate_symbols_json(library_path):
     return output_data
 
 if __name__ == '__main__':
-    # Anda bisa menambahkan fungsi main di sini jika diperlukan
     pass
