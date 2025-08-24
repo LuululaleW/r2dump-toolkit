@@ -43,7 +43,6 @@ class TestR2Dump(unittest.TestCase):
         self.assertIsNotNone(result, "Fungsi seharusnya mengembalikan dictionary, bukan None")
 
         def normalize_data(data):
-            # Mengurutkan data untuk memastikan perbandingan konsisten
             sorted_classes = sorted(data['classes'], key=lambda x: x['class_name'])
             for cls in sorted_classes:
                 cls['methods'] = sorted(cls['methods'], key=lambda x: x['name'])

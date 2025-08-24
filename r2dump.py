@@ -19,8 +19,8 @@ def generate_symbols_json(library_path):
 
     symbols = []
 
-    # Langkah 1: Jalankan readelf untuk mendapatkan simbol dari library
     try:
+        # Perintah readelf disederhanakan untuk kompatibilitas maksimal
         readelf_process = subprocess.Popen(
             ['readelf', '-s', library_path],
             stdout=subprocess.PIPE,
@@ -42,7 +42,6 @@ def generate_symbols_json(library_path):
         print("Error: 'readelf' command not found. Please ensure binutils is installed.")
         return None
 
-    # Langkah 2: Jalankan c++filt untuk demangle semua simbol yang ditemukan
     try:
         mangled_input = "\n".join([symbol for offset, symbol in mangled_symbols])
         cxxfilt_process = subprocess.Popen(
@@ -70,7 +69,6 @@ def generate_symbols_json(library_path):
     for i, (offset, _) in enumerate(mangled_symbols):
         symbols.append({'offset': f'0x{offset}', 'demangled_name': demangled_names[i]})
 
-    # Langkah 3: Proses simbol yang sudah di-demangle
     class_map = defaultdict(list)
     total_methods = 0
 
@@ -80,6 +78,7 @@ def generate_symbols_json(library_path):
         if ' ' in demangled_name:
             demangled_name = demangled_name.split()[-1]
 
+        # Regex yang sudah diperbaiki
         match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
 
         if match:
@@ -94,7 +93,6 @@ def generate_symbols_json(library_path):
             })
             total_methods += 1
 
-    # Langkah 4: Format output
     output_data = {
         'library_name': os.path.basename(library_path),
         'classes_found': len(class_map),
@@ -117,12 +115,10 @@ def main():
     parser = argparse.ArgumentParser(description="Analisis simbol C++ dari file .so.")
     subparsers = parser.add_subparsers(dest="command", required=True, help="Sub-command help")
 
-    # Sub-command untuk 'dump'
     parser_dump = subparsers.add_parser("dump", help="Menganalisis satu file .so dan menyimpan hasilnya.")
     parser_dump.add_argument("file", help="Path ke file .so yang akan dianalisis.")
     parser_dump.add_argument("--format", choices=['txt', 'json'], default='txt', help="Format output (txt atau json).")
 
-    # Sub-command untuk 'diff'
     parser_diff = subparsers.add_parser("diff", help="Membandingkan dua file .so.")
     parser_diff.add_argument("file1", help="Path ke file .so pertama.")
     parser_diff.add_argument("file2", help="Path ke file .so kedua.")
@@ -141,18 +137,19 @@ def main():
                 with open(output_path, 'w') as f:
                     json.dump(result, f, indent=4)
                 print(f"Hasil JSON disimpan di: {output_path}")
-            else: # txt format
+            else:  # txt format
                 output_path = os.path.join(output_dir, "dump.txt")
                 with open(output_path, 'w') as f:
-                    f.write(f"Library: {result['library_name']}\n")
-                    f.write(f"Classes Found: {result['classes_found']}\n")
-                    f.write(f"Methods Found: {result['methods_found']}\n")
-                    f.write("="*40 + "\n\n")
                     for cls in result['classes']:
-                        f.write(f"CLASS: {cls['class_name']}\n")
+                        if cls['methods']:
+                            f.write(f"// CLASS: {cls['class_name']}\n")
+                        
                         for method in cls['methods']:
-                            f.write(f"  - {method['name']}{method['params']} @ {method['offset']}\n")
-                        f.write("\n")
+                            offset = method['offset']
+                            simple_offset = offset.replace('0x', '').upper()
+                            
+                            f.write(f"\t// RVA: 0x{simple_offset} Offset: 0x{simple_offset} VA: 0x{offset}\n")
+                            f.write(f"\t{method['name']}{method['params']} {{ }}\n\n")
                 print(f"Hasil TXT disimpan di: {output_path}")
     
     elif args.command == "diff":
@@ -162,7 +159,6 @@ def main():
         data2 = generate_symbols_json(args.file2)
 
         if data1 and data2:
-            # Membuat set dari signature metode untuk perbandingan cepat
             methods1 = {f"{c['class_name']}::{m['name']}{m['params']}" for c in data1['classes'] for m in c['methods']}
             methods2 = {f"{c['class_name']}::{m['name']}{m['params']}" for c in data2['classes'] for m in c['methods']}
 
