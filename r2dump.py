@@ -74,8 +74,8 @@ def generate_symbols_json(library_path):
             demangled_name = demangled_name.split()[-1]
 
         # ==================================================================
-        # === INI ADALAH BARIS YANG DIPERBAIKI ===
-        # Menghapus garis miring terbalik ganda yang tidak perlu
+        # === INI ADALAH BARIS YANG SEHARUSNYA SUDAH DIPERBAIKI ===
+        # Pastikan tidak ada garis miring terbalik ganda (\\)
         match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
         # ==================================================================
 
