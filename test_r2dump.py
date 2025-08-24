@@ -40,10 +40,11 @@ EXPECTED_RESULT = {
 # FUNGSI TES
 # ==============================================================================
 
-# Patch Popen dan tempfile secara bersamaan
+# Patch os.path.isfile, Popen, dan tempfile secara bersamaan
+@patch('r2dump.os.path.isfile', return_value=True)
 @patch('r2dump.tempfile.NamedTemporaryFile')
 @patch('r2dump.subprocess.Popen')
-def test_generate_symbols_json_parsing(mock_popen, mock_tempfile):
+def test_generate_symbols_json_parsing(mock_popen, mock_tempfile, mock_isfile):
     """
     Tes ini memverifikasi bahwa fungsi generate_symbols_json dapat mem-parsing
     output simbol palsu dengan benar dan menghasilkan struktur data yang diharapkan.
@@ -56,9 +57,7 @@ def test_generate_symbols_json_parsing(mock_popen, mock_tempfile):
     mock_popen.side_effect = [mock_readelf_process, mock_cxxfilt_process]
 
     # Atur mock untuk tempfile.NamedTemporaryFile
-    # Ini akan membuat objek file palsu di memori
     mock_file_handle = mock_open(read_data=FAKE_SYMBOLS_OUTPUT).return_value
-    # Saat __enter__ dipanggil (saat blok 'with' dimulai), kembalikan handle file palsu
     mock_tempfile.return_value.__enter__.return_value = mock_file_handle
     
     # 2. EKSEKUSI
@@ -69,9 +68,7 @@ def test_generate_symbols_json_parsing(mock_popen, mock_tempfile):
     
     # Normalisasi hasil untuk perbandingan yang andal (mengabaikan urutan)
     def normalize_data(data):
-        # Mengurutkan kelas berdasarkan nama
         sorted_classes = sorted(data['classes'], key=lambda x: x['class_name'])
-        # Mengurutkan metode di dalam setiap kelas
         for cls in sorted_classes:
             cls['methods'] = sorted(cls['methods'], key=lambda x: x['name'])
         data['classes'] = sorted_classes
