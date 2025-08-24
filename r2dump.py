@@ -73,11 +73,8 @@ def generate_symbols_json(library_path):
         if ' ' in demangled_name:
             demangled_name = demangled_name.split()[-1]
 
-        # ==================================================================
-        # === INI ADALAH BARIS KUNCI YANG DIPERBAIKI ===
-        # Pastikan tidak ada garis miring ganda (\\)
+        # Regex yang sudah diperbaiki untuk parsing nama metode dan kelas
         match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
-        # ==================================================================
 
         if match:
             class_name = match.group(1)
@@ -108,32 +105,5 @@ def generate_symbols_json(library_path):
     return output_data
 
 if __name__ == '__main__':
-    pass            class_name = match.group(1)
-            method_name = match.group(2)
-            params = match.group(3)
-            
-            class_map[class_name].append({
-                'name': method_name,
-                'offset': symbol['offset'],
-                'params': params
-            })
-            total_methods += 1
-
-    # Langkah 4: Format output sesuai struktur JSON yang diharapkan
-    output_data = {
-        'library_name': library_path,
-        'classes_found': len(class_map),
-        'methods_found': total_methods,
-        'classes': []
-    }
-
-    for class_name, methods in class_map.items():
-        output_data['classes'].append({
-            'class_name': class_name,
-            'methods': methods
-        })
-
-    return output_data
-
-if __name__ == '__main__':
+    # Anda bisa menambahkan fungsi main di sini jika diperlukan
     pass
