@@ -75,7 +75,7 @@ def generate_symbols_json(library_path):
 
         # ==================================================================
         # === INI ADALAH BARIS KUNCI YANG DIPERBAIKI ===
-        # Pastikan tidak ada garis miring ganda (\\)
+        # Regex yang benar tanpa garis miring ganda (\\)
         match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
         # ==================================================================
 
