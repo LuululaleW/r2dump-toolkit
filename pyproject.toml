@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "r2dump-toolkit"
-version = "1.0.0"
+version = "1.2.0"
 authors = [
     { name = "LuululaleW", email = "ramabkl650@gmail.com" },
 ]
@@ -16,8 +16,6 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Topic :: Software Development :: Disassemblers",
-    "Environment :: Console",
 ]
 dependencies = [
     "colorlog>=6.7.0",
