@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from r2dump import generate_symbols_json
 
-# Mock output dari readelf
+# Mock output dari readelf, mensimulasikan simbol yang akan diproses
 MOCK_READELF_OUTPUT = """
 Symbol table '.dynsym' contains 3 entries:
    Num:    Value          Size Type    Bind   Vis      Ndx Name
@@ -13,7 +13,7 @@ Symbol table '.dynsym' contains 3 entries:
      3: 0000000000056780    60 FUNC    GLOBAL DEFAULT   13 _ZN12AnotherClass13anotherMethodERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
 """
 
-# Mock output dari c++filt
+# Mock output dari c++filt, hasil demangle dari simbol di atas
 MOCK_CXXFILT_OUTPUT = "MyNamespace::MyClass::doSomething(int, bool)\nMyNamespace::MyClass::~MyClass()\nAnotherClass::anotherMethod(std::string const&)\n"
 
 
@@ -43,6 +43,7 @@ class TestR2Dump(unittest.TestCase):
         self.assertIsNotNone(result, "Fungsi seharusnya mengembalikan dictionary, bukan None")
 
         def normalize_data(data):
+            # Mengurutkan data untuk memastikan perbandingan konsisten
             sorted_classes = sorted(data['classes'], key=lambda x: x['class_name'])
             for cls in sorted_classes:
                 cls['methods'] = sorted(cls['methods'], key=lambda x: x['name'])
