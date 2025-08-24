@@ -74,8 +74,8 @@ def generate_symbols_json(library_path):
             demangled_name = demangled_name.split()[-1]
 
         # ==================================================================
-        # === INI ADALAH BARIS KUNCI YANG DIPERBAIKI ===
-        # Regex yang benar tanpa garis miring ganda (\\)
+        # === INI ADALAH PERBAIKAN REGEX UTAMA ===
+        # Menghapus garis miring ganda (\\) yang salah
         match = re.match(r'^(.*)::(~?\w+)(\(.*\))$', demangled_name)
         # ==================================================================
 
@@ -108,4 +108,5 @@ def generate_symbols_json(library_path):
     return output_data
 
 if __name__ == '__main__':
+    # Fungsi main bisa ditambahkan di sini jika perlu
     pass
