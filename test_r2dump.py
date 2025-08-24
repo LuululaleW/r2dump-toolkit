@@ -21,13 +21,13 @@ EXPECTED_RESULT = {
     'methods_found': 3,
     'classes': [
         {
-            'class_name': 'AnotherClass', 
+            'class_name': 'AnotherClass',
             'methods': [
                 {'name': 'anotherMethod', 'params': '(std::string const&)', 'offset': '0x56780'}
             ]
         },
         {
-            'class_name': 'MyNamespace::MyClass', 
+            'class_name': 'MyNamespace::MyClass',
             'methods': [
                 {'name': '~MyClass', 'params': '()', 'offset': '0xABCDE'},
                 {'name': 'doSomething', 'params': '(int, bool)', 'offset': '0x12340'}
@@ -50,7 +50,7 @@ def test_generate_symbols_json_parsing(mock_popen, mock_tempfile, mock_isfile):
     output simbol palsu dengan benar dan menghasilkan struktur data yang diharapkan.
     """
     # 1. SETUP MOCK
-    
+
     # Atur mock untuk Popen
     mock_readelf_process = MagicMock()
     mock_cxxfilt_process = MagicMock()
@@ -59,13 +59,13 @@ def test_generate_symbols_json_parsing(mock_popen, mock_tempfile, mock_isfile):
     # Atur mock untuk tempfile.NamedTemporaryFile
     mock_file_handle = mock_open(read_data=FAKE_SYMBOLS_OUTPUT).return_value
     mock_tempfile.return_value.__enter__.return_value = mock_file_handle
-    
+
     # 2. EKSEKUSI
     result = generate_symbols_json('libfake.so')
 
     # 3. VERIFIKASI
     assert result is not None, "Fungsi seharusnya mengembalikan dictionary, bukan None"
-    
+
     # Normalisasi hasil untuk perbandingan yang andal (mengabaikan urutan)
     def normalize_data(data):
         sorted_classes = sorted(data['classes'], key=lambda x: x['class_name'])
@@ -78,4 +78,4 @@ def test_generate_symbols_json_parsing(mock_popen, mock_tempfile, mock_isfile):
     normalized_expected = normalize_data(EXPECTED_RESULT)
 
     assert normalized_result == normalized_expected
-
+   
